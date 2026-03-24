@@ -1,3 +1,0 @@
-dir.create("TP1/notebooks", recursive = TRUE)
-dir.create("TP1/data", recursive = TRUE)
-dir.create("TP1/output", recursive = TRUE)
