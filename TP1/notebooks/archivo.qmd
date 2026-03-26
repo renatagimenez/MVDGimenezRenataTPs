@@ -48,6 +48,10 @@ internet_long = internet_clean |>
     year = str_remove(year, "x")
   )
 
+#punto 3: identifico y gestiono los valores faltantes 
+internet_long <- internet_long %>%
+  drop_na(valor_internet)
+  
 # visualizo como quedó
 head(internet_long)
 
@@ -67,4 +71,7 @@ group_by(region, year, income_group) |> summarize(
   arrange(year, region)
 
 print(datos_hipotesis)
+
+
+
 
