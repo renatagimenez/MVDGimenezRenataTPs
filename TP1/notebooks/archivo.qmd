@@ -39,12 +39,12 @@ metadatos_clean = normalize_dataframe(metadatos_raw, which = "both")
 #punto 2: paso la tabla de formato Wide a Long
 internet_long = internet_clean |> 
   pivot_longer(
-    cols = starts_with("x"), # Seleccionamos todas las columnas que empiezan con 'x' (los años)
-    names_to = "year",       # El nombre de la nueva columna para los años
-    values_to = "valor_internet" # El nombre de la columna con los datos
+    cols = starts_with("x"), # selecciono todas las columnas que empiezan con 'x' (los años)
+    names_to = "year",       #nombre nueva columna para los años
+    values_to = "valor_internet" # nombre de la columna con los datos
   ) |> 
   mutate(
-    # Limpiamos el nombre del año (le sacamos la 'x' que suele poner R adelante)
+# limpio el nombre del año (saco la x que r pone adelante)
     year = str_remove(year, "x")
   )
 
@@ -72,10 +72,50 @@ group_by(region, year, income_group) |> summarize(
   arrange(year, region) |> 
   mutate(year = factor(year, levels = 2013:2023),
   income_group = factor(income_group,
-                        levels = c("Low income", "Lower middle income")))
+                        levels = c("Low income", "Lower middle income", "Upper middle income", "High income")))
 
 print(datos_hipotesis)
 
 
+#entregable final: 
+hipotesis_final <- df_completo |> 
+  mutate(year = as.numeric(year)) |> 
+  filter(
+    year >= 2013 & year <= 2023,
+    income_group %in% c(
+      "Low income",
+      "Lower middle income",
+      "Upper middle income",
+      "High income"
+    )
+  ) |>
+  group_by(year, income_group) |>
+  summarize(
+    promedio_internet = mean(valor_internet, na.rm = TRUE),
+    .groups = "drop"
+  )
 
+# pivoteo a formato wide
+hipotesis_final <- hipotesis_final |>
+  pivot_wider(
+    names_from = income_group,
+    values_from = promedio_internet)
+
+# agrego a la tabla normbre indicador
+hipotesis_final <- hipotesis_final |>
+  mutate(
+    indicator_name = "Prorcentaje de la poblacion que son usuarios de internet (%)")
+    
+
+#exporto trabajo
+
+dir.create("../output", showWarnings = FALSE)
+
+file_name = file.path("../output", "resultado_hipotesis")
+
+write_csv(hipotesis_final, paste0(file_name, ".csv"))
+
+saveRDS(hipotesis_final, paste0(file_name, ".rds"))
+
+  
 
