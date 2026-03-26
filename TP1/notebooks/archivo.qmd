@@ -62,13 +62,17 @@ df_completo = internet_long |>
 
 head(df_completo)
 
-#punto 5: separo los datos que necesito para testear la hipotes en una tabla hipotesis y calculo el promedio 
+#punto 5: separo los datos que necesito para testear la hipotes en una tabla hipotesis y calculo el promedio
+# punto 7: ademas del punto 5, ordeno por año
 datos_hipotesis <- df_completo |> filter(year >= 2013 & year <=2023) |> filter(income_group %in% c("Low income", "Lower middle income")) |>
 group_by(region, year, income_group) |> summarize(
     promedio_internet = mean(valor_internet, na.rm = TRUE),
     .groups = "drop" 
   ) |> 
-  arrange(year, region)
+  arrange(year, region) |> 
+  mutate(year = factor(year, levels = 2013:2023),
+  income_group = factor(income_group,
+                        levels = c("Low income", "Lower middle income")))
 
 print(datos_hipotesis)
 
