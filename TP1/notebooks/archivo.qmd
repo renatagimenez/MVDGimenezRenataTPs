@@ -1,1 +1,70 @@
+install.packages("tidyverse")
+install.packages("janitor")
+library(tidyverse)
+library(janitor)
+
+path_internet = "TP1/data/internet_users_world_wide.csv"
+path_metadatos = "TP1/data/metadata_countries_internet_users.csv"
+
+# cargo los datos
+internet_raw = read_csv(path_internet, skip=4)
+metadatos_raw = read_csv(path_metadatos)
+
+#punto 1:
+#genero funcion para normalizar y borrar valores faltantes
+normalize_dataframe = function(dataframe, clean = TRUE, which = "cols") {
+
+  if (clean) {
+    data_clean = janitor::clean_names(dataframe)
+  } else {
+    data_clean = dataframe
+  }
+  
+#elimino los datos que faltan 
+  if (which == "both") {
+    data_clean = data_clean |> 
+      janitor::remove_empty(which = 'cols') |> 
+      janitor::remove_empty(which = 'rows')
+  } else {
+    data_clean = janitor::remove_empty(data_clean, which = which)
+  }
+  
+  return(data_clean)
+}
+
+#llamo a la funcion
+internet_clean = normalize_dataframe(internet_raw, which = "both")
+metadatos_clean = normalize_dataframe(metadatos_raw, which = "both")
+
+#punto 2: paso la tabla de formato Wide a Long
+internet_long = internet_clean |> 
+  pivot_longer(
+    cols = starts_with("x"), # Seleccionamos todas las columnas que empiezan con 'x' (los años)
+    names_to = "year",       # El nombre de la nueva columna para los años
+    values_to = "valor_internet" # El nombre de la columna con los datos
+  ) |> 
+  mutate(
+    # Limpiamos el nombre del año (le sacamos la 'x' que suele poner R adelante)
+    year = str_remove(year, "x")
+  )
+
+# visualizo como quedó
+head(internet_long)
+
+
+#punto 4: left_join para unir
+df_completo = internet_long |> 
+  left_join(metadatos_clean, by = c("country_name" = "table_name","country_code" = "country_code"))
+
+head(df_completo)
+
+#punto 5: separo los datos que necesito para testear la hipotes en una tabla hipotesis y calculo el promedio 
+datos_hipotesis <- df_completo |> filter(year >= 2013 & year <=2023) |> filter(income_group %in% c("Low income", "Lower middle income")) |>
+group_by(region, year, income_group) |> summarize(
+    promedio_internet = mean(valor_internet, na.rm = TRUE),
+    .groups = "drop" 
+  ) |> 
+  arrange(year, region)
+
+print(datos_hipotesis)
 
