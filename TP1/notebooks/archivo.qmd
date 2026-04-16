@@ -1,26 +1,43 @@
-install.packages("tidyverse")
-install.packages("janitor")
-library(tidyverse)
-library(janitor)
+# Trabajo Práctico 1
 
+### Alumna: Renata Gimenez
+
+Cargo las librerías necesarias y luego defino las rutas a los archivos CSV.
+
+```{r}
+install.packages("tidyverse") 
+install.packages("janitor") 
+library(tidyverse) 
+library(janitor)
+```
+
+```{r}
 path_internet = "TP1/data/internet_users_world_wide.csv"
 path_metadatos = "TP1/data/metadata_countries_internet_users.csv"
+```
 
-# cargo los datos
+Cargo los datos, salteando las primeras 4 lineas del archivo principal.
+
+```{r}
 internet_raw = read_csv(path_internet, skip=4)
 metadatos_raw = read_csv(path_metadatos)
+```
 
-#punto 1:
-#genero funcion para normalizar y borrar valores faltantes
+### Punto 1: genero función para normalizar y borrar valores faltantes
+
+Defino la funcion "normalize_dataframe" que realiza dos tareas: estandariza los nombres de columnas y elimina las filas y columnas que estan vacías.
+
+```{r}
 normalize_dataframe = function(dataframe, clean = TRUE, which = "cols") {
 
   if (clean) {
     data_clean = janitor::clean_names(dataframe)
   } else {
     data_clean = dataframe
-  }
-  
-#elimino los datos que faltan 
+  }}
+```
+
+```{r}
   if (which == "both") {
     data_clean = data_clean |> 
       janitor::remove_empty(which = 'cols') |> 
@@ -30,13 +47,20 @@ normalize_dataframe = function(dataframe, clean = TRUE, which = "cols") {
   }
   
   return(data_clean)
-}
+```
 
-#llamo a la funcion
+Llamo a la función.
+
+```{r}
 internet_clean = normalize_dataframe(internet_raw, which = "both")
 metadatos_clean = normalize_dataframe(metadatos_raw, which = "both")
+```
 
-#punto 2: paso la tabla de formato Wide a Long
+### Punto 2: paso la tabla de formato Wide a Long
+
+Ademas de transformar el formato de la tabla, saco el prefijo "x" que aparece al inicio de los años.
+
+```{r}
 internet_long = internet_clean |> 
   pivot_longer(
     cols = starts_with("x"), # selecciono todas las columnas que empiezan con 'x' (los años)
@@ -47,23 +71,38 @@ internet_long = internet_clean |>
 # limpio el nombre del año (saco la x que r pone adelante)
     year = str_remove(year, "x")
   )
+```
 
-#punto 3: identifico y gestiono los valores faltantes 
+### Punto 3: identifico y gestiono los valores faltantes
+
+Elimino las filas donde el valor de los usuarios es "NA". Esto me permite asegurarme que los calculos posteriores no se vean afectados por datos ausentes.
+
+```{r}
 internet_long <- internet_long %>%
   drop_na(valor_internet)
   
 # visualizo como quedó
 head(internet_long)
+```
 
+### Punto 4: left_join para unir
 
-#punto 4: left_join para unir
+Uno la tabla de internet con la de metadatos de países. La unión se hace por nombre y código de país.
+
+```{r}
 df_completo = internet_long |> 
   left_join(metadatos_clean, by = c("country_name" = "table_name","country_code" = "country_code"))
 
 head(df_completo)
+```
 
-#punto 5: separo los datos que necesito para testear la hipotes en una tabla hipotesis y calculo el promedio
-# punto 7: ademas del punto 5, ordeno por año
+### Punto 5: separo los datos que necesito para testear la hipotes en una tabla hipotesis y calculo el promedio
+
+### Punto 7: ademas del punto 5, ordeno por año
+
+Realizo un filtro para solo tener en cuenta el período 2013-2023 y conservar los grupos de ingreso bajo y medio-bajo. Tambien agrupo por región, año y grupo de ingreso para calcular el promedio de usuarios de internet. Finalmente ordeno por año y región.
+
+```{r}
 datos_hipotesis <- df_completo |> filter(year >= 2013 & year <=2023) |> filter(income_group %in% c("Low income", "Lower middle income")) |>
 group_by(region, year, income_group) |> summarize(
     promedio_internet = mean(valor_internet, na.rm = TRUE),
@@ -75,9 +114,13 @@ group_by(region, year, income_group) |> summarize(
                         levels = c("Low income", "Lower middle income", "Upper middle income", "High income")))
 
 print(datos_hipotesis)
+```
 
+### Entregable final:
 
-#entregable final: 
+Construcción de la tabla definitiva
+
+```{r}
 hipotesis_final <- df_completo |> 
   mutate(year = as.numeric(year)) |> 
   filter(
@@ -104,18 +147,16 @@ hipotesis_final <- hipotesis_final |>
 # agrego a la tabla normbre indicador
 hipotesis_final <- hipotesis_final |>
   mutate(
-    indicator_name = "Prorcentaje de la poblacion que son usuarios de internet (%)")
+    indicator_name = "Procentaje de la poblacion que son usuarios de internet (%)")
     
 
 #exporto trabajo
 
 dir.create("../output", showWarnings = FALSE)
 
-file_name = file.path("../output", "resultado_hipotesis")
+file_name = file.path("TP1/output", "resultado_hipotesis")
 
 write_csv(hipotesis_final, paste0(file_name, ".csv"))
 
 saveRDS(hipotesis_final, paste0(file_name, ".rds"))
-
-  
-
+```
