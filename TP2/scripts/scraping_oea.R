@@ -40,9 +40,10 @@ for (mes in meses) {
   # Selector confirmado con SelectorGadget
   links <- pagina |>
     html_elements("a.itemmenulink") |>
-    html_attr("href") |>
-    paste0("https://www.oas.org/es/centro_noticias/", .) |>
-    unique()
+    html_attr("href")
+  
+  links <- paste0("https://www.oas.org/es/centro_noticias/", links)
+  links <- unique(links)
   
   total_links <- c(total_links, links)
   message("Links encontrados en mes ", mes, ": ", length(links))
@@ -67,8 +68,7 @@ if (is.null(html)) {
 # Guardo el HTML con la fecha de descarga - buena práctica del tutorial 04
 write_html(
   html,
-  here("TP2/data", paste0("oea_raw_", id, "_", Sys.Date(), ".html"))
-)
+  here("TP2/data", paste0("oea_raw_", id, "_", Sys.Date(), ".html")))
 
 # Extraigo el título y el cuerpo
 # Selectores confirmados con SelectorGadget
